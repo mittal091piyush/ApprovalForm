@@ -1,0 +1,375 @@
+<apex:page standardController="Account" extensions="CoreApprovalForm_ext" standardStylesheets="true" applyBodyTag="false" sidebar="false" docType="html-5.0" showHeader="false" >        
+    
+    <head>
+        <apex:slds />
+        <apex:stylesheet value="https://code.jquery.com/ui/1.10.3/themes/smoothness/jquery-ui.css"  />
+        <apex:includeScript value="https://code.jquery.com/jquery-1.9.1.js" />
+        <apex:includeScript value="https://code.jquery.com/ui/1.10.3/jquery-ui.js" />
+    </head>
+    
+    
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>         
+    <script type="text/javascript">
+        $(document).ready(function(){                                                                       
+            
+           $("[id$='forfuturedatesdisable']").datepicker(
+           {
+             defaultDate: "+1w",
+             changeMonth: true,
+             changeYear: true,
+             numberOfMonths: 1,
+             dateFormat:"dd/mm/yy",
+             altField: "#event_start_date_alternate",
+             altFormat: "yy-mm-dd",
+             showAnim: "slide",
+             minDate : 0,
+             maxDate : 60
+           })
+           $("[id$='forfuturedatesdisable1']").datepicker(
+           {
+             defaultDate: "+1w",
+             changeMonth: true,
+             changeYear: true,
+             numberOfMonths: 1,
+             dateFormat:"dd/mm/yy",
+             altField: "#event_start_date_alternate",
+             altFormat: "yy-mm-dd",
+             showAnim: "slide",
+             minDate : 0,
+             maxDate : 60
+           })
+           var $input = $('#refresh');
+            $input.val() == 'yes' ? location.reload(true) : $input.val('yes');
+    
+            var inputs = $(".test");
+            
+            for(var i = 0; i < inputs.length; i++){
+                
+                //alert( 'each Val --> '+ $(inputs[i]).val() + 'dis/en --> '+$(inputs[i]).attr('disabled') );
+                
+                if( $(inputs[i]).val() == 'Accept' && $(inputs[i]).attr('disabled') != 'disabled' )                                      
+                   $(inputs[i]).next().show('500');
+                  
+                 
+                   
+                if( $(inputs[i]).val() == 'Reject' && $(inputs[i]).attr('disabled') != 'disabled' ){
+                                       
+                    $(inputs[i]).next().next().show('500');
+                    
+                    if( $(inputs[i]).next().next().children().children().children().children().children().children().next().children().val() == 'Others' )
+                        $(inputs[i]).next().next().children().children().children().children().children().next().children().children().show('500');    
+                    
+                }   
+                 
+            }
+                        
+            
+        });
+    </script>    
+    
+    <script>
+    function showMyNeigbour(that,val){                                
+        
+        if( val == 'Accept' ){
+            $(that).next().show('500');            
+            $(that).next().next().hide('500');                                                                                          
+            $(that).next().find(".test1");           
+            $(that).next().find(".test2"); 
+            $(that).next().find(".test3");
+            $(that).siblings().find(".test1").attr('minDate', today); 
+            
+        }                            
+        else if( val == 'Reject' ){
+                        
+            $(that).next().hide('500');                                               
+            $(that).next().next().show('500');        
+            $(that).next().next().find(".test4").attr('required', 'true');
+            $(that).next().find(".test1").attr('required', null);                         
+            $(that).next().find(".test2").attr('required', null); 
+            $(that).next().find(".test3").attr('required', null);
+            
+        }    
+        else if( val == '' ){
+                                    
+            $(that).next().hide('500');                
+            $(that).next().next().hide('500');
+            $(that).next().find(".test1").attr('required', null); 
+            $(that).next().find(".test2").attr('required', null); 
+            $(that).next().find(".test3").attr('required', null);  
+            $(that).next().next().find(".test4").attr('required', null);
+            
+            
+        }
+        
+    }        
+   </script>
+   
+   <script>
+       function showMyFreeText( that, value ){
+       
+           
+           if( value == 'Others' ){
+               
+                                                            
+               $(that).parent().parent().next().children().children().show('500'); 
+               //$(that).parent().parent().next().children().children().next().show('500');               
+               $(that).parent().parent().next().children().children().attr( 'required', 'required' );
+               
+           }
+           else{
+               
+               $(that).parent().parent().next().children().children().attr( 'required', null );
+               $(that).parent().parent().next().children().children().hide('500');               
+               
+               
+           }
+           
+       }
+   </script>
+   
+   <script>
+       $(function(){
+        
+        
+        //$("datepicker").datepicker();
+        //$("[id$='demo']").datepicker();
+        //alert( abc );
+        var now = new Date();
+        var day = ("0" + now.getDate()).slice(-2);
+        var month = ("0" + (now.getMonth() + 1)).slice(-2);
+        var monthTomm = ("0" + (now.getMonth() + 3)).slice(-2);                
+        var today = now.getFullYear()+"-"+(month)+"-"+(day);                
+        var tomorrow = now.getFullYear()+"-"+(monthTomm)+"-"+(day);                        
+                
+        $("[id$='forfuturedatesdisable']").attr('max', tomorrow);        
+        $("[id$='forfuturedatesdisable']").attr('min',today);                
+        
+        $("[id$='forfuturedatesdisable1']").attr('max', tomorrow);
+        $("[id$='forfuturedatesdisable1']").attr('min',today);
+        
+        
+        });
+
+   </script>                
+   <script>
+    function validateForEmail(that,val){
+        
+        var filter = /^([\w-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([\w-]+\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\]?)$/;
+        
+        if( !filter.test(val) ){                
+        
+            alert( 'Invalid email address entered' );
+                        
+        
+        }    
+        
+    }
+    </script>
+    
+    <style type="text/css">
+     .HeaderStyle{
+        font-size: 15px;
+        color : white ;
+        padding-left:10px;
+        padding-bottum:30px;
+        line-height: 35px;
+        vertical-align:middle;           
+    }
+    </style>
+    <script type="text/javascript">
+ 
+        j$ = jQuery.noConflict();
+ 
+        j$(document).ready(function() 
+        {
+          j$( "#forfuturedatesdisable" ).datepicker(
+           {
+             defaultDate: "+1w",
+             changeMonth: true,
+             changeYear: true,
+             numberOfMonths: 1,
+             dateFormat:'dd/mm/yy'            
+           });
+           j$( "#forfuturedatesdisable1" ).datepicker(
+           {
+             defaultDate: "+1w",
+             changeMonth: true,
+             changeYear: true,
+             numberOfMonths: 1,
+             dateFormat:'dd/mm/yy'            
+           });
+        });
+    </script>
+   
+    <apex:form >
+    <apex:inputfield value="{!Account.shippingCountry}" style="display:none;"/>
+    <apex:inputfield value="{!Account.recordTypeId}" style="display:none;"/>
+    <apex:pageMessages escape="false"></apex:pageMessages>
+    <apex:inputfield value="{!Account.recordTypeId}" style="display:none;"/>    
+        <apex:pageBlock >
+            <apex:pageBlockButtons rendered="{!wrapListNonVerified.size>0}">
+                <apex:commandButton value="{!Send_Approval}" Action="{!SendApprovals}" style="background:#012b72;font-size: 15px;color:white;height:35px;width:200px;" />
+                <br/><br/>
+                <apex:commandButton value="{!First}" action="{!first}" disabled="{!disableFirst}"/>
+                <apex:commandButton value="{!Previous}" action="{!Prev}" disabled="{!disablePrev}" />
+                &nbsp;&nbsp; {!Page} &nbsp; {!currentPage} / {!totalNumOfPages} &nbsp;&nbsp;
+                <apex:commandButton value="{!Next}" action="{!next}" disabled="{!disableNext}" />
+                <apex:commandButton value="{!Last}" action="{!last}" disabled="{!disableLast}" />
+            </apex:pageBlockButtons>                       
+            
+            
+            <div>
+                <apex:outputField value="{!Account.Name}"  />
+               <!--  <span> </span> -->
+            </div>
+           
+            <apex:pageBlockTable value="{!wrapListperPage}" var="rep"  columns="12" styleClass="slds-table slds-table_cell-buffer slds-table_bordered">          
+            
+                <div>
+
+                    <!-- Account Name -->  
+                    <apex:column headerValue="{!Location_Name}" >  <!-- Location Name -->                                   
+                        <apex:outputText value="{!rep.accName}"  />
+                    </apex:column>
+                    
+                    <!-- Approval -->                 
+                    <apex:column headerValue="{!Accept_Reject}">                                                                
+                        
+                        <apex:selectList value="{!rep.approve}" size="1"  onchange="showMyNeigbour(this,this.value);" disabled="{!IF( rep.verified == true, true, false )}" styleClass="test"  >
+                            <apex:selectOptions value="{!ApproveOrReject}" />
+                        </apex:selectList>                                      
+            
+                        <!-- Div for approved --> 
+                        <div style = "background-color: white;display:none;" class="firstDiv" >
+                    
+                            <apex:pageBlockSection >
+                            
+                                <!-- Preferred Installation Date -->                             
+                                <span style="font-family: Salesforce Sans, Arial, sans-serif;text-align: right;font-size: 100%;font-weight: bold;cursor: default;font-color:#514f4d;">{!Preffered_Installation_Date}</span>                   
+                                <apex:input type="auto"  value="{!rep.installationDate}" styleClass="test1 slds-input" id="forfuturedatesdisable" html-placeholder="dd/mm/yyyy" />  <!-- {!IF(rep.approve == 'Accept', true, false)} -->                                                                                            
+                                
+                                <!-- Site Readiness Date -->                             
+                                <span style="font-family: Salesforce Sans, Arial, sans-serif;text-align: right;font-size: 100%;font-weight: bold;cursor: default;font-color:#514f4d;">{!Site_Readiness_Date}</span>                   
+                                <apex:input type="auto" value="{!rep.readinessDate}" styleClass="test1 slds-input" id="forfuturedatesdisable1" html-placeholder="dd/mm/yyyy" /> <!-- {!IF(rep.approve == 'Accept', true, false)} -->                                                            
+                                
+                                <!-- On-Site contact Full Name  -->                        
+                                <span style="font-family: Salesforce Sans, Arial, sans-serif;text-align: right;font-size: 100%;font-weight: bold;cursor: default;font-color:#514f4d;">{!On_Site_contact_Full_Name}</span>
+                                <apex:inputText value="{!rep.conName}" styleClass="test2 slds-input" />
+                                
+                                <!-- On-Site contact Phone  -->                        
+                                <span style="font-family: Salesforce Sans, Arial, sans-serif;text-align: right;font-size: 100%;font-weight: bold;cursor: default;font-color:#514f4d;">{!On_Site_contact_Phone}</span>
+                                <apex:inputText value="{!rep.conPhone}" styleClass="test2 slds-input" />
+                                                                            
+                                <!-- On Site Contact Email  -->                        
+                                <span style="font-family: Salesforce Sans, Arial, sans-serif;text-align: right;font-size: 100%;font-weight: bold;cursor: default;font-color:#514f4d;">{!on_site_Contact_email_address}</span>
+                                <apex:input value="{!rep.conEmail}" styleClass="test3 slds-input" type="email" />      
+                                
+                                <span style="font-family: Salesforce Sans, Arial, sans-serif;text-align: right;font-size: 100%;font-weight: bold;cursor: default;font-color:#514f4d;">{!Image_1}</span>                                        
+                                <apex:inputFile value="{!rep.attach0.body}" fileName="{!rep.attach0.name}"   styleClass="slds-file-selector__input slds-file-selector" id="newAttFiles0" style="width:100%;"/>
+                                
+                                <span style="font-family: Salesforce Sans, Arial, sans-serif;text-align: right;font-size: 100%;font-weight: bold;cursor: default;font-color:#514f4d;">{!Image_2}</span>                                        
+                                <apex:inputFile value="{!rep.attach1.body}" fileName="{!rep.attach1.name}"   styleClass="slds-file-selector__input slds-file-selector" id="newAttFiles1" style="width:100%;"/>
+                                
+                                <span style="font-family: Salesforce Sans, Arial, sans-serif;text-align: right;font-size: 100%;font-weight: bold;cursor: default;font-color:#514f4d;">{!Image_3}</span>                                        
+                                <apex:inputFile value="{!rep.attach2.body}" fileName="{!rep.attach2.name}"   styleClass="slds-file-selector__input slds-file-selector" id="newAttFiles2" style="width:100%;"/>
+                                
+                                <span style="font-family: Salesforce Sans, Arial, sans-serif;text-align: right;font-size: 100%;font-weight: bold;cursor: default;font-color:#514f4d;">{!Permits}</span>                                        
+                                <apex:inputFile value="{!rep.attach3.body}" fileName="{!rep.attach3.name}"   styleClass="slds-file-selector__input slds-file-selector" id="newAttFiles3" style="width:100%;"/>
+                                
+                                <span style="font-family: Salesforce Sans, Arial, sans-serif;text-align: right;font-size: 100%;font-weight: bold;cursor: default;font-color:#514f4d;">{!Map_file}</span>                                        
+                                <apex:inputFile value="{!rep.attach4.body}" fileName="{!rep.attach4.name}"   styleClass="slds-file-selector__input slds-file-selector" id="newAttFiles4" style="width:100%;"/>
+                                                
+                            </apex:pageBlockSection>
+                    
+                        </div>
+                    
+                        <!-- Div for reject --> 
+                        <div style = "background-color: white;display:none;">
+                            
+                            <apex:pageBlockSection columns="1" >
+                            
+                                <!-- On Site Rejecton Reason -->                                
+                                <apex:selectList value="{!rep.rejReason}" size="1"  onchange="showMyFreeText(this,this.value);"  styleClass="test4" label="{!Rejection_Reason}" id="testSelect" >
+                                    <apex:selectOptions value="{!RejectionReason}" />
+                                </apex:selectList>    
+                                     
+                                <apex:inputTextarea value="{!rep.detailedReason}" style="background-color: white;display:none;margin-left:18%;" html-placeholder="{!Enter_Rejection_Reason}" />                                                                                                                                                                                         
+                                                                                                                                            
+                            </apex:pageBlockSection>
+                            
+                        </div>
+                   
+                    </apex:column>
+                    
+                    <!-- Shipping Street -->
+                    <apex:column headerValue="{!Street}">                    
+                        <apex:outputText value="{!rep.shipStreet}"  />
+                    </apex:column>
+                    
+                    <!-- Shipping City -->
+                    <apex:column headerValue="{!City}">                    
+                        <apex:outputText value="{!rep.shipCity}" />
+                    </apex:column>
+                    
+                    <!-- Shipping State -->
+                    <apex:column headerValue="{!State}">                    
+                        <apex:outputText value="{!rep.shipState}"  />
+                    </apex:column>
+                    
+                    <!-- Shipping PostalCode -->
+                    <apex:column headerValue="{!Postal_Code}">                    
+                        <apex:outputText value="{!rep.shipPostalCode}" />                                
+                    </apex:column>
+                    
+                    <!-- Survey Review Outcome -->                    
+                    <apex:column headerValue="{!Survey_Review_Outcome}">                    
+                        <apex:outputText value="{!rep.surveyReviewOutcome}" />
+                    </apex:column>
+                    
+                    <!-- Power Available -->
+                    <apex:column headerValue="{!Power_Available}">                    
+                        <apex:inputCheckbox disabled="true" value="{!rep.powerAvail}" />                                
+                    </apex:column>
+
+                    <!-- Electrician Required -->
+                    <apex:column headerValue="{!Electrician_Required}">                    
+                        <apex:inputCheckbox disabled="true" value="{!rep.elecReq}" />                                
+                    </apex:column>
+                    
+                    <!-- Concreate Base -->
+                    <apex:column headerValue="{!Concreate_Base}">                    
+                        <apex:inputCheckbox disabled="true" value="{!rep.concBase}" />                                
+                    </apex:column>
+                    
+                    <apex:column headerValue="{!Image_URL}">                    
+                        <a href="{!rep.imageSurvey}">{!rep.imageSurvey}</a>     <!-- <apex:outputText value="{!rep.imageSurvey}" /> -->
+                    </apex:column>                    
+                    
+                    <!-- Survey Comments -->                    
+                    <apex:column headerValue="{!Survey_Comments}">                    
+                        <apex:outputText value="{!rep.surveyComments}" />
+                    </apex:column>
+
+                    
+                    <!-- Friendly Directions -->
+                    <!--
+                    <apex:column headerValue="Friendly Directions">                    
+                        <apex:inputCheckbox disabled="true" value="{!rep.concBase}" />                                
+                    </apex:column>
+                    
+                    <!-- Location Model -->
+                    <!--
+                    <apex:column headerValue="Location Model">                    
+                        <apex:inputCheckbox disabled="true" value="{!rep.concBase}" />                                
+                    </apex:column>
+                    -->
+                    
+                </div>                                                                                                                            
+                
+            </apex:pageblockTable>
+            
+            
+        </apex:pageBlock>
+    </apex:form>
+    
+</apex:page>
