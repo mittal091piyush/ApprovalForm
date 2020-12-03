@@ -1,0 +1,614 @@
+public class CoreApprovalForm_ext {
+    
+    public Account                crtAcc              {get; set;}         
+    public List<wraperClass>      wrapList            {get; set;}
+    public List<wraperClass>      wrapListVerified    {get; set;}
+    public List<wraperClass>      wrapListNonVerified {get; set;}
+    public List<wraperClass>      wrapListperPage     {get; set;}                 
+    public List<SelectOption>     ApproveOrReject     {set;}
+    public List<SelectOption>     RejectionReason     {set;}    
+    public String                 selectedOption      {get; set;}            
+    public List<wraperClass>      listToDisplay       {get; set;}
+    public Integer                totalNumOfPages     {get; set;}
+    public Integer                currentPage         {get; set;}
+    public Boolean                disableFirst        {get; set;}
+    public Boolean                disablePrev         {get; set;}
+    public Boolean                disableNext         {get; set;}
+    public Boolean                disableLast         {get; set;}
+    public String                 country             {get; set;}
+    
+    /*~~~~~ Labels ~~~~~*/
+    public String                 Send_Approval                  {get; set;}
+    public String                 First                          {get; set;}
+    public String                 Previous                       {get; set;}
+    public String                 Last                           {get; set;}
+    public String                 Next                           {get; set;}
+    public String                 Location_Name                  {get; set;}
+    public String                 Accept_Reject                  {get; set;}
+    public String                 Street                         {get; set;}
+    public String                 City                           {get; set;}
+    public String                 State                          {get; set;}
+    public String                 Postal_Code                    {get; set;}
+    public String                 Survey_Review_Outcome          {get; set;}
+    public String                 Survey_Comments                {get; set;}
+    public String                 Power_Available                {get; set;}
+    public String                 Electrician_Required           {get; set;}
+    public String                 Concreate_Base                 {get; set;}
+    public String                 Image_URL                      {get; set;}
+    public String                 Preffered_Installation_Date    {get; set;}
+    public String                 Site_Readiness_Date            {get; set;}
+    public String                 On_Site_contact_Full_Name      {get; set;}
+    public String                 On_Site_contact_Phone          {get; set;}
+    public String                 on_site_Contact_email_address  {get; set;}
+    public String                 Image_1                        {get; set;}
+    public String                 Image_2                        {get; set;}
+    public String                 Image_3                        {get; set;}
+    public String                 Permits                        {get; set;}
+    public String                 Map_file                       {get; set;}
+    public String                 Rejection_Reason               {get; set;}
+    public String                 Enter_Rejection_Reason         {get; set;}
+    public String                 Page                {get; set;}
+    public String                 ThanksForApproval        {get; set;}
+    
+    public Integer                paginationRecs; 
+    public Integer                sizeOfWraperList;
+    public Map<String, Survey__c> m_LocIdsToSurvey;
+    public Map<id, Account>       m_AccIdToAccs;
+    public Set<String>            s_locationAccId;
+    public wraperClass            wrapObj;
+    
+
+    /* ~~~~~~~~~~ To Set the Custom Picklist Values ~~~~~~~~~~ */
+    public List<SelectOption> getApproveOrReject () {
+        
+        List<SelectOption> options = new List<SelectOption>();                
+            options.add( new SelectOption('', '--None--') );
+            options.add( new SelectOption('Accept', 'Accept') );
+            options.add( new SelectOption('Reject', 'Reject') );            
+        
+        return options;
+        
+    }/* End of getter */     
+    
+    /* ~~~~~~~~~~ To Set the Custom Picklist Values ~~~~~~~~~~ */
+    public List<SelectOption> getRejectionReason () {
+        
+        List<SelectOption> options = new List<SelectOption>();                
+            options.add( new SelectOption('', '--None--') );
+            options.add( new SelectOption('I want a bigger locker', 'I want a bigger locker') );
+            options.add( new SelectOption('I want a smaller locker', 'I want a smaller locker') );            
+            options.add( new SelectOption('Request to correct address', 'Request to correct address') );            
+            options.add( new SelectOption('Others', 'Others') );            
+        
+        return options;
+        
+    }/* End of getter */     
+       
+    
+    /* ~~~~~~~~~~~~~~~ Constructor ~~~~~~~~~~~~~~~ */
+    public CoreApprovalForm_ext(ApexPages.StandardController controller) {
+         
+        crtAcc = (Account) controller.getRecord();
+        wrapList = new List<wraperClass> ();
+        System.debug( 'crtAcc --> '+crtAcc.id );        
+        s_locationAccId = new Set<String>();                       
+        m_LocIdsToSurvey = new Map<String, Survey__c>();
+        wrapListVerified = new List<wraperClass>();
+        wrapListNonVerified = new List<wraperClass>();
+        wrapListperPage = new List<wraperClass>();      
+        paginationRecs = 5;
+        
+        disableFirst = true; 
+        disablePrev = true;         
+        disableNext = true;         
+        disableLast = true;
+
+        try{  
+
+        ApproveOrReject = new List<SelectOption>();
+        RejectionReason = new List<SelectOption>();
+        
+        String compAccRecId = Schema.sObjectType.Account.getRecordTypeInfosbyName().get('Company - Locker/Counter').getRecordTypeId();
+        String locAccRecId = Schema.sObjectType.Account.getRecordTypeInfosbyName().get('Location Locker/Counter').getRecordTypeId();                
+         
+        if( String.isNotBlank( crtAcc.id ) ){                                              
+            Map<String,Survey__c> caseId2SurveyMap = new Map<String,Survey__c>();
+            /* ~~~~~~~~~~ Company Account level ~~~~~~~~~~ */
+            if( crtAcc.recordTypeId == compAccRecId ){
+                System.debug( 'In If -->' );
+               
+                m_AccIdToAccs = new Map<id, Account>([ SELECT id, name, ShippingStreet, ShippingCity, ShippingState, ShippingPostalCode,ShippingCountry, parent.country_code__c
+                                                         FROM Account WHERE parentId =: crtAcc.id ]);    
+                
+                if(m_AccIdToAccs.size() >  0){
+                    List<Account> acc = m_AccIdToAccs.values();
+                    if(acc.size() > 0){
+                        if(!string.isEmpty(acc[0].parent.country_code__c))
+                            fillLablesByCountry(acc[0].parent.country_code__c);
+                        else
+                            fillLablesByCountry('GB');                        
+                    }
+                }                
+                
+                for( Survey__c eachSurvey : [ SELECT id,Case__c, parent_account_id__c, account_id__c, Preffered_Installation_date__c, On_site_Contact_Phone__c,
+                                                     On_site_Contact_full_name__c, On_site_Contact_email__c, verified__c , Rejection_Reason__c,
+                                                     case__r.status,case__r.Survey_Review_outcome__c, Need_for_concrete_base__c, Power_in_place_YN__c,
+                                                     Electrician_required_YN__c, case__r.Image_Url__c, case__r.Survey_Comments__c,
+                                                     Kiosk_Host_Email_Id__c, Kiosk_Host_Contact_Number__c, Host_Contact_name__c
+                                                FROM Survey__c 
+                                               WHERE Account_id__c =: m_AccIdToAccs.keySet() 
+                                                 AND case__r.Survey_Review_outcome__c = 'Approved'
+                                            ORDER BY createdDate DESC ] ){
+                                                
+                    if( !caseId2SurveyMap.containsKey( eachSurvey.Case__c ) )
+                        caseId2SurveyMap.put( eachSurvey.Case__c,eachSurvey );    
+                }
+
+                for( Survey__c eachSurvey : caseId2SurveyMap.values() ){
+
+                    m_LocIdsToSurvey.put( eachSurvey.account_id__c, eachSurvey );  
+                    
+                    wrapObj = new wraperClass();
+                    wrapObj.accName = m_AccIdToAccs.get( eachSurvey.account_id__c ).name;                    
+                    wrapObj.shipStreet = m_AccIdToAccs.get( eachSurvey.account_id__c ).ShippingStreet;
+                    wrapObj.shipCity = m_AccIdToAccs.get( eachSurvey.account_id__c ).ShippingCountry;
+                    wrapObj.shipState = m_AccIdToAccs.get( eachSurvey.account_id__c ).ShippingState;
+                    wrapObj.shipPostalCode = m_AccIdToAccs.get( eachSurvey.account_id__c ).ShippingPostalCode;
+                    wrapObj.surveyReviewOutcome = eachSurvey.case__r.Survey_Review_outcome__c;
+                    wrapObj.surveyComments = eachSurvey.case__r.Survey_Comments__c;
+                    wrapObj.accId = eachSurvey.account_id__c;
+                    wrapObj.powerAvail = eachSurvey.Power_in_place_YN__c;
+                    wrapObj.elecReq = eachSurvey.Electrician_required_YN__c;
+                    wrapObj.concBase = eachSurvey.Need_for_concrete_base__c;
+                    wrapObj.imageSurvey = eachSurvey.case__r.Image_Url__c;
+                    
+                    wrapObj.conName = eachSurvey.Host_Contact_name__c;
+                    wrapObj.conEmail = eachSurvey.Kiosk_Host_Email_Id__c;
+                    wrapObj.conPhone = eachSurvey.Kiosk_Host_Contact_Number__c;
+                                      
+                    wrapObj.ApproveInit = 'false'; 
+
+                    if( eachSurvey.Verified__c ){
+                        wrapObj.verified = true;
+                        wrapListVerified.add( wrapObj ); 
+                        
+                        if( String.isNotBlank( eachSurvey.Rejection_Reason__c ) ) 
+                            wrapObj.Approve = 'Reject';
+                       
+                        else                             
+                            wrapObj.Approve = 'Accept';
+                            
+                    }                        
+                    else if( !eachSurvey.Verified__c ){
+                        wrapObj.attach0 = new Attachment();
+                        wrapObj.attach1 = new Attachment();
+                        wrapObj.attach2 = new Attachment();
+                        wrapObj.attach3 = new Attachment();
+                        wrapObj.attach4 = new Attachment();
+                        
+                        s_locationAccId.add( eachSurvey.account_id__c );
+                        wrapListNonVerified.add( wrapObj );                  
+                        
+                    }    
+                                                   
+                }/* End of for */                                
+                                           
+            }/* End of if */
+            
+            /* ~~~~~~~~~~~~~~~~~~~~ Location Account Level ~~~~~~~~~~~~~~~~~~~~ */
+            else If( crtAcc.recordTypeId == locAccRecId ){
+                
+                system.debug( 'In Else --> ' );  
+                m_AccIdToAccs = new Map<id, Account>([ SELECT id, name, ShippingStreet, ShippingCity, ShippingState, ShippingPostalCode, country_code__c
+                                                         FROM Account WHERE Id =: crtAcc.id ]);
+               
+                if(!string.isEmpty(m_AccIdToAccs.get(crtAcc.id).country_code__c))
+                  fillLablesByCountry(m_AccIdToAccs.get(crtAcc.id).country_code__c);
+                else
+                    fillLablesByCountry('GB');
+                
+                for( Survey__c eachSurvey : [ SELECT id,Case__c, parent_account_id__c, account_id__c, Preffered_Installation_date__c, On_site_Contact_Phone__c,
+                                                     On_site_Contact_full_name__c, On_site_Contact_email__c, verified__c , Rejection_Reason__c,
+                                                     case__r.status,case__r.Survey_Review_outcome__c, Need_for_concrete_base__c, Power_in_place_YN__c,
+                                                     Electrician_required_YN__c, case__r.Image_Url__c, case__r.Survey_Comments__c, 
+                                                     Kiosk_Host_Email_Id__c, Kiosk_Host_Contact_Number__c, Host_Contact_name__c
+                                                FROM Survey__c 
+                                               WHERE Account_id__c =: m_AccIdToAccs.keySet() 
+                                                 AND case__r.Survey_Review_outcome__c = 'Approved'
+                                            ORDER BY createdDate DESC ] ){
+                    if( !caseId2SurveyMap.containsKey( eachSurvey.Case__c ) )
+                    caseId2SurveyMap.put( eachSurvey.Case__c,eachSurvey );    
+                }
+                    
+                for( Survey__c eachSurvey : caseId2SurveyMap.values() ){
+                    
+                    m_LocIdsToSurvey.put( eachSurvey.account_id__c, eachSurvey );  
+                    
+                    wrapObj = new wraperClass();
+                    wrapObj.accName = m_AccIdToAccs.get( eachSurvey.account_id__c ).name;
+                    wrapObj.shipStreet = m_AccIdToAccs.get( eachSurvey.account_id__c ).ShippingStreet;
+                    wrapObj.shipCity = m_AccIdToAccs.get( eachSurvey.account_id__c ).ShippingCity;
+                    wrapObj.shipState = m_AccIdToAccs.get( eachSurvey.account_id__c ).ShippingState;
+                    wrapObj.shipPostalCode = m_AccIdToAccs.get( eachSurvey.account_id__c ).ShippingPostalCode;
+                    wrapObj.surveyReviewOutcome = eachSurvey.case__r.Survey_Review_outcome__c;
+                    wrapObj.surveyComments = eachSurvey.case__r.Survey_Comments__c;
+                    wrapObj.accId = eachSurvey.account_id__c;
+                    wrapObj.powerAvail = eachSurvey.Power_in_place_YN__c;
+                    wrapObj.elecReq = eachSurvey.Electrician_required_YN__c;
+                    wrapObj.concBase = eachSurvey.Need_for_concrete_base__c;
+                    wrapObj.imageSurvey = eachSurvey.case__r.Image_Url__c;
+                    
+                    wrapObj.conName = eachSurvey.Host_Contact_name__c;
+                    wrapObj.conEmail = eachSurvey.Kiosk_Host_Email_Id__c;
+                    wrapObj.conPhone = eachSurvey.Kiosk_Host_Contact_Number__c;
+                 
+                    wrapObj.ApproveInit = 'false';                                
+                    
+                    if( eachSurvey.verified__c ){
+                         
+                        wrapObj.verified = true;
+                        wrapListVerified.add( wrapObj );
+                        
+                        if( String.isNotBlank( eachSurvey.Rejection_Reason__c ) ) 
+                            wrapObj.Approve = 'Reject';
+                       
+                        else                             
+                            wrapObj.Approve = 'Accept';                        
+                       
+                    }                        
+                    else{                        
+                        wrapObj.attach0 = new Attachment();
+                        wrapObj.attach1 = new Attachment();
+                        wrapObj.attach2 = new Attachment();
+                        wrapObj.attach3 = new Attachment();
+                        wrapObj.attach4 = new Attachment();
+                        s_locationAccId.add( eachSurvey.account_id__c );
+                        wrapListNonVerified.add( wrapObj );                                                                    
+                    }                                                       
+                }/* End of for */                    
+            }/* End of else if */              
+            if( !wrapListNonVerified.isEmpty() )
+                wrapList.addAll( wrapListNonVerified );
+            
+            if( !wrapListVerified.isEmpty() )
+                wrapList.addAll( wrapListVerified );   
+                         
+                
+            /* ~~~~~~~~~~ Pagination ~~~~~~~~~~ */    
+            
+            if( !wrapList.isEmpty() ){
+                                                                  
+                sizeOfWraperList = wrapList.size();
+                
+                if( sizeOfWraperList <= paginationRecs ){
+                    
+                    totalNumOfPages = 1;
+                    currentPage = 1; 
+                    wrapListperPage.addAll( wrapList );                           
+                    
+                }
+                else{
+                    
+                    Integer remainder = math.mod( sizeOfWraperList, paginationRecs );
+                    if( remainder == 0 ){
+                    
+                        totalNumOfPages = sizeOfWraperList/paginationRecs;
+                        currentPage = 1;                        
+                        
+                    }
+                    else{
+                    
+                        Decimal block = sizeOfWraperList/paginationRecs;
+                        totalNumOfPages = block.intValue() + 1;
+                        currentPage = 1;
+                        
+                    }   
+                    
+                    first();
+                                    
+                }/* End if else */                
+                
+            }/*  End of if */ 
+                         
+            System.debug( 'wrapList --> '+wrapList );              
+        
+        }/* End of if */ 
+        else
+            ApexPages.addMessage( new ApexPages.message( ApexPAges.severity.ERROR, 'You\'ve not provided an id or it\'s incorrect' ) );                             
+      }
+       catch( Exception e ){
+          PVD_UtilityClass.createExceptionDebugLogs( 'CoreApprovalForm_ext: Constructor', e.getMessage(), e.getStackTraceString(), crtAcc.Id, '' );
+          System.debug( 'ErrorMessage --> '+e.getMessage()+' Stack_trace --> '+e.getStackTraceString() ); 
+       }   
+    }/* End of constructor */
+    
+    public void fillLablesByCountry(string countrycode){
+               
+       if( String.isNotBlank(countrycode)){ 
+            country = countrycode; 
+        }
+        else{ 
+            country = 'GB'; 
+        }
+        
+        For( Mapping_Country_names_to_labels__mdt eachMapping : [ SELECT id, Enter_Rejection_Reason__c, Rejection_Reason__c,
+                                                                         Map__c, Permits__c, Image_3__c, Image_2__c, Image_1__c,
+                                                                         on_site_Contact_email_address__c, On_Site_contact_Phone__c,
+                                                                         On_Site_contact_Full_Name__c, Site_Readiness_Date__c,
+                                                                         Preffered_Installation_Date__c, Image_URL__c, Concreate_Base__c,
+                                                                         Electrician_Required__c, Power_Available__c, Postal_Code__c,
+                                                                         State__c, City__c, Street__c, Location_Name__c, Accept_Reject__c,
+                                                                         Next__c, Last__c, Previous__c, First__c, Send_Approval__c,
+                                                                         Survey_Review_Outcome__c, Survey_Comments__c, Page__c,Thanks_For_Approval__c
+                                                                    FROM Mapping_Country_names_to_labels__mdt 
+                                                                   WHERE Country__c = :country ] ){
+            Send_Approval = eachMapping.Send_Approval__c;
+            First = eachMapping.First__c;
+            Previous = eachMapping.Previous__c;                                                               
+            Last = eachMapping.Last__c;
+            Next = eachMapping.Next__c;
+            Accept_Reject = eachMapping.Accept_Reject__c;
+            Location_Name = eachMapping.Location_Name__c;
+            Street = eachMapping.Street__c;
+            City = eachMapping.City__c;
+            State = eachMapping.State__c;
+            Postal_Code = eachMapping.Postal_Code__c;
+            Power_Available = eachMapping.Power_Available__c;
+            Survey_Review_Outcome = eachMapping.Survey_Review_Outcome__c;
+            Survey_Comments = eachMapping.Survey_Comments__c;
+            Electrician_Required = eachMapping.Electrician_Required__c;
+            Concreate_Base = eachMapping.Concreate_Base__c;
+            Image_URL = eachMapping.Image_URL__c;
+            Preffered_Installation_Date = eachMapping.Preffered_Installation_Date__c;
+            Site_Readiness_Date = eachMapping.Site_Readiness_Date__c;
+            On_Site_contact_Full_Name = eachMapping.On_Site_contact_Full_Name__c;
+            On_Site_contact_Phone = eachMapping.On_Site_contact_Phone__c;
+            on_site_Contact_email_address = eachMapping.on_site_Contact_email_address__c;
+            Image_1 = eachMapping.Image_1__c;        
+            Image_2 = eachMapping.Image_2__c;
+            Image_3 = eachMapping.Image_3__c;
+            Permits = eachMapping.Permits__c;
+            Map_file = eachMapping.Map__c;
+            Rejection_Reason = eachMapping.Rejection_Reason__c;
+            Enter_Rejection_Reason = eachMapping.Enter_Rejection_Reason__c;
+            Page = eachMapping.Page__c;
+            ThanksForApproval = eachMapping.Thanks_For_Approval__c;    
+            
+        }/* End of for */
+    }
+    
+    /* ~~~~~~~~~~ Return the list to view ~~~~~~~~~~ */
+    public List<WraperClass> returnCurrentList( Integer pageNum ){
+        
+        List<WraperClass> l_ListToReturn = new List<WraperClass>();
+        Integer initialIndex;
+        Integer finalIndex;
+
+        initialIndex = (pageNum-1)*paginationRecs;
+        /* ~~~~~ When on the last page ~~~~~ */
+        if( pageNum == totalNumOfPages  ){
+            
+            if( math.mod( sizeOfWraperList, paginationRecs ) == 0 )
+                finalIndex = initialIndex + paginationRecs;
+                
+            else
+                finalIndex = initialIndex + math.mod( sizeOfWraperList, paginationRecs );                             
+            
+        }    
+        else                        
+            finalIndex = initialIndex + paginationRecs;                                 
+                
+        For( Integer i = initialIndex; i<finalIndex; i++ ){
+            
+            l_ListToReturn.add( wrapList[i] );                    
+            
+        }/* End of for */    
+        
+        return l_ListToReturn;    
+    
+    }/* End of method */
+
+    
+    /* ~~~~~~~~~~ Submit Approvals Method ~~~~~~~~~~ */
+    public Pagereference SendApprovals(){
+        String recIds;
+        System.debug( 'In SendApprovals --> ' );
+        Pagereference pr;
+        Attachment a;
+        List<Attachment> attList = new List<Attachment>();
+        try{
+
+            List<Survey__c> l_SurveyToUpdate = new List<Survey__c>();
+            Survey__c surveyObj;
+                                   
+            for( wraperClass wrapObj : wrapList ){
+                                
+                if( wrapObj.Approve != null && s_locationAccId.contains( wrapObj.accId ) ){
+                    
+                    surveyObj = new Survey__c();                                     
+                    surveyObj.id = m_LocIdsToSurvey.get( wrapObj.accId ).id;   recIds = recIds==null? 'Survey id-'+surveyObj.id : ','+surveyObj.id ;  
+                    surveyObj.verified__c = true;
+                    
+                    if( wrapObj.Approve == 'Accept' ){
+                    
+                        surveyObj.On_site_Contact_full_name__c = wrapObj.conName;
+                        surveyObj.On_site_Contact_email__c = wrapObj.conEmail;
+                        surveyObj.On_site_Contact_Phone__c = wrapObj.conPhone;
+                        surveyObj.Preffered_Installation_date__c = convertStringToDate( wrapObj.installationDate );  
+                        surveyObj.Site_Readiness_Date__c =  convertStringToDate( wrapObj.readinessDate ); 
+                        
+                        if( wrapObj.attach0.body != null ){                                                    
+                            a = new attachment( parentId=m_LocIdsToSurvey.get( wrapObj.accId ).case__c, name=wrapObj.attach0.name, body=wrapObj.attach0.body );
+                            attList.add( a );                            
+                        }                                                                   
+                        if( wrapObj.attach1.body != null ){                                                    
+                            a = new attachment( parentId=m_LocIdsToSurvey.get( wrapObj.accId ).case__c, name=wrapObj.attach1.name, body=wrapObj.attach1.body );
+                            attList.add( a );                            
+                        }                                                                   
+                        if( wrapObj.attach2.body != null ){                                                    
+                            a = new attachment( parentId=m_LocIdsToSurvey.get( wrapObj.accId ).case__c, name=wrapObj.attach2.name, body=wrapObj.attach2.body );
+                            attList.add( a );                            
+                        }                                                                   
+                        if( wrapObj.attach3.body != null ){                                                    
+                            a = new attachment( parentId=m_LocIdsToSurvey.get( wrapObj.accId ).case__c, name=wrapObj.attach3.name, body=wrapObj.attach3.body );
+                            attList.add( a );                            
+                        }                                                                   
+                        if( wrapObj.attach4.body != null ){                                                    
+                            a = new attachment( parentId=m_LocIdsToSurvey.get( wrapObj.accId ).case__c, name=wrapObj.attach4.name, body=wrapObj.attach4.body );
+                            attList.add( a );                            
+                        }                                                                   
+                    
+                    }/* End of if on Approve == 'Accept' */
+                    else if( wrapObj.Approve == 'Reject' ){
+                    
+                      if( wrapObj.rejReason == 'Others' )                      
+                          surveyObj.Rejection_Reason__c = wrapObj.rejReason+': '+ (String.isNotBlank( wrapObj.detailedReason ) ? wrapObj.detailedReason : '');
+                          
+                      else
+                          surveyObj.Rejection_Reason__c = wrapObj.rejReason;    
+                    
+                    }/* End od else if */
+                      
+                    l_SurveyToUpdate.add( surveyObj );                                               
+                
+                }/* End of if */                
+                
+            }/* End of for */
+            
+            if( !attList.isEmpty() )
+                insert attList;
+            
+            if( !l_SurveyToUpdate.isEmpty() ){
+                
+                Set<Survey__c> Set2Update = new Set<survey__c>();
+                for(Survey__c getval : l_SurveyToUpdate)
+                   Set2Update.add(getval);
+                l_SurveyToUpdate.clear();   
+                l_SurveyToUpdate.addAll( Set2Update );
+                update l_SurveyToUpdate; 
+                pr = new Pagereference( '/ThanksForYourApproval?id='+crtAcc.id );     
+                pr.setRedirect(true);
+                return pr;                
+                
+            }    
+            else{
+                            
+                ApexPages.addMessage( new ApexPages.message( ApexPAges.severity.ERROR, 'Please approve the properties before clicking the "Send Approval" button' ) );                      
+                return null;
+            
+            }    
+                
+        }/* End of try */
+        catch( Exception ex ){
+            PVD_UtilityClass.createExceptionDebugLogs( 'CoreApprovalForm_ext: SendApprovals', ex.getMessage(), ex.getStackTraceString(), recIds, '' );
+            ApexPages.addMessage( new ApexPages.message( ApexPAges.severity.ERROR, 'Message -->'+ex.getMessage()+' Stack_trace --> '+ex.getStackTraceString() ) );
+            return null;      
+            
+        }/* End of catch */                                               
+    
+    }/* End of method */
+    
+    /* ~~~~~~~~~~~~~~~ Pagination Methods ~~~~~~~~~~~~~~~ */
+   
+    /* ~~~~~ First ~~~~~ */
+    public void first(){        
+        currentPage = 1; 
+        wrapListperPage = returnCurrentList( currentPage );
+        
+        disableFirst = true; 
+        disablePrev = true;         
+        disableNext = false;         
+        disableLast = false;             
+    
+    }/* End of first */
+    
+    /* ~~~~~ Prev ~~~~~ */
+    public void prev(){                
+        currentPage--;
+        if( currentPage == 1 )
+            first();
+        
+        else{    
+            
+            wrapListperPage = returnCurrentList( currentPage );
+            disableFirst = false; 
+            disablePrev = false;         
+            disableNext = false;         
+            disableLast = false;                 
+            
+        }    
+    
+    }/* End of prev */
+    
+    /* ~~~~~ Next ~~~~~ */
+    public void next(){
+        currentPage++;
+        if( currentPage == totalNumOfPages )            
+            last();
+                   
+        else{
+            
+            wrapListperPage = returnCurrentList( currentPage );
+            disableFirst = false; 
+            disablePrev = false;         
+            disableNext = false;         
+            disableLast = false;             
+            
+        }    
+    
+    }/* End of next */
+    
+    /* ~~~~~ Last ~~~~~ */
+    public void last(){
+        currentPage = totalNumOfPages;        
+        wrapListperPage = returnCurrentList( currentPage );
+        
+        disableFirst = false; 
+        disablePrev = false;         
+        disableNext = true;         
+        disableLast = true;                 
+    
+    }/* End of last */
+    
+    public date convertStringToDate( String dateVal ){
+        if( String.isNotBlank( dateVal ) ){
+            List<String> DateList = dateVal.split( '/' );
+            Date returnDate = date.newInstance( Integer.valueOf( DateList[2] ), Integer.valueOf( DateList[1] ), Integer.valueOf( DateList[0] ) );
+            return returnDate;  
+        }else{ return null; }
+    }
+    
+    /* ~~~~~~~~~~ Wrapper Class ~~~~~~~~~~ */
+    public class wraperClass{
+              
+       public String accName        {get; set;}
+       public String Approve        {get; set;}
+       public String ApproveInit    {get; set;}
+       public String accId          {get; set;}
+       public String shipStreet     {get; set;}
+       public String shipCity       {get; set;}
+       public String shipState      {get; set;}
+       public String shipPostalCode {get; set;}
+       public String surveyReviewOutcome {get; set;}
+       public String surveyComments {get; set;}
+       public Boolean powerAvail    {get; set;}
+       public Boolean elecReq       {get; set;}
+       public Boolean concBase      {get; set;}       
+       public String installationDate {get; set;}
+       public String readinessDate    {get; set;}
+       public String conName        {get; set;}
+       public String conEmail       {get; set;}
+       public String conPhone       {get; set;}
+       public String rejReason      {get; set;}
+       public String detailedReason {get; set;}
+       public String imageSurvey    {get; set;}
+       public Boolean verified      {get; set;}
+       public Attachment attach0    {get; set;}
+       public Attachment attach1    {get; set;}
+       public Attachment attach2    {get; set;}
+       public Attachment attach3    {get; set;}
+       public Attachment attach4    {get; set;}        
+        
+    }/* End of wrapper class */
+
+}/* End of Class */
